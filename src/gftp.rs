@@ -127,8 +127,6 @@ impl FileDesc {
         let upload_progress = self.upload_progress.clone();
         let _ = bus::bind(&gsb_address, move |msg: model::GetChunk| {
             let desc = desc.clone();
-            upload_progress.lock().total = desc.meta.file_size;
-            upload_progress.lock().current = msg.offset;
             //log::info!("Sending chunk: {:?}", msg);
             let upload_progress = upload_progress.clone();
             async move {
