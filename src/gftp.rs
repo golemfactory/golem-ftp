@@ -3,6 +3,7 @@ use futures::lock::Mutex;
 use futures::prelude::*;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
+use serde::Serialize;
 use sha3::{Digest, Sha3_256};
 use std::collections::VecDeque;
 use std::fs::{File, OpenOptions};
@@ -11,7 +12,6 @@ use std::path::Path;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::{fs, io};
-use serde::Serialize;
 use url::{quirks::hostname, Position, Url};
 
 use ya_core_model::gftp as model;
@@ -33,6 +33,16 @@ pub struct StreamProgress {
     pub start: std::time::Instant,
     pub upload_list: VecDeque<u64>,
 }
+impl Default for StreamProgress {
+    fn default() -> Self {
+        StreamProgress {
+            total: 0,
+            current: 0,
+            start: std::time::Instant::now(),
+            upload_list: VecDeque::new(),
+        }
+    }
+}
 
 #[derive(Serialize)]
 pub struct StreamProgressInfo {
@@ -50,7 +60,8 @@ pub struct StreamProgressInfo {
 
 impl PartialEq for StreamProgress {
     fn eq(&self, other: &Self) -> bool {
-        let simple_field_res = self.total == other.total && self.current == other.current && self.start == other.start;
+        let simple_field_res =
+            self.total == other.total && self.current == other.current && self.start == other.start;
         if !simple_field_res {
             return false;
         }
@@ -81,12 +92,7 @@ impl FileDesc {
             hash,
             file,
             meta,
-            upload_progress: Arc::new(parking_lot::Mutex::new(StreamProgress {
-                total: 0,
-                current: 0,
-                start: std::time::Instant::now(),
-                upload_list: VecDeque::new(),
-            })),
+            upload_progress: Arc::new(parking_lot::Mutex::new(StreamProgress::default())),
         })
     }
 
@@ -140,53 +146,7 @@ impl FileDesc {
         });
 
         let upload_progress = self.upload_progress.clone();
-        tokio::spawn(async move {
-            let mut interval = tokio::time::interval(tokio::time::Duration::from_millis(250));
-            let mut last_progress = upload_progress.lock().clone();
-
-            loop {
-                interval.tick().await;
-                let current = upload_progress.lock().current;
-                let progress = {
-                    let mut upload_obj = upload_progress.lock();
-                    upload_obj.upload_list.push_back(current);
-                    if upload_obj.upload_list.len() > 20 {
-                        upload_obj.upload_list.pop_front();
-                    }
-                    upload_obj.clone()
-                };
-
-                if last_progress != progress && progress.total > 0 {
-                    let sec_el = progress.start.elapsed().as_secs_f64();
-                    let speed = if sec_el > 0_f64 {
-                        progress.current as f64 / sec_el
-                    } else {
-                        0.0
-                    };
-
-                    let current_speed = if progress.upload_list.len() >= 2 {
-                        (progress.upload_list.iter().last().unwrap()
-                            - progress.upload_list.iter().next().unwrap())
-                            as f64
-                            / (progress.upload_list.len() - 1) as f64
-                            / interval.period().as_secs_f64()
-                    } else {
-                        0_f64
-                    };
-
-                    let stream_progress_info = StreamProgressInfo {
-                        current: progress.current,
-                        total: progress.total,
-                        elapsed: sec_el as u64,
-                        speed_curr: current_speed as u64,
-                        speed_total: speed as u64,
-                    };
-
-                    println!("{}", serde_json::to_string(&stream_progress_info).unwrap());
-                }
-                last_progress = progress;
-            }
-        });
+        tokio::spawn(async move { report_progress_loop(upload_progress).await });
     }
 
     async fn get_chunk(
@@ -254,6 +214,53 @@ pub async fn download_from_url(url: &Url, dst_path: &Path) -> Result<()> {
     download_file(node_id, &hash, dst_path).await
 }
 
+pub async fn report_progress_loop(progress: Arc<parking_lot::Mutex<StreamProgress>>) {
+    let mut interval = tokio::time::interval(tokio::time::Duration::from_millis(250));
+    let mut last_progress = progress.lock().clone();
+
+    loop {
+        interval.tick().await;
+        let current = progress.lock().current;
+        let progress = {
+            let mut upload_obj = progress.lock();
+            upload_obj.upload_list.push_back(current);
+            if upload_obj.upload_list.len() > 20 {
+                upload_obj.upload_list.pop_front();
+            }
+            upload_obj.clone()
+        };
+
+        if last_progress != progress && progress.total > 0 {
+            let sec_el = progress.start.elapsed().as_secs_f64();
+            let speed = if sec_el > 0_f64 {
+                progress.current as f64 / sec_el
+            } else {
+                0.0
+            };
+
+            let current_speed = if progress.upload_list.len() >= 2 {
+                (progress.upload_list.iter().last().unwrap()
+                    - progress.upload_list.iter().next().unwrap()) as f64
+                    / (progress.upload_list.len() - 1) as f64
+                    / interval.period().as_secs_f64()
+            } else {
+                0_f64
+            };
+
+            let stream_progress_info = StreamProgressInfo {
+                current: progress.current,
+                total: progress.total,
+                elapsed: sec_el as u64,
+                speed_curr: current_speed as u64,
+                speed_total: speed as u64,
+            };
+
+            println!("{}", serde_json::to_string(&stream_progress_info).unwrap());
+        }
+        last_progress = progress;
+    }
+}
+
 pub async fn download_file(node_id: NodeId, hash: &str, dst_path: &Path) -> Result<()> {
     let remote = node_id.service_transfer(&model::file_bus_id(hash));
     log::debug!("Creating target file {}", dst_path.display());
@@ -270,6 +277,15 @@ pub async fn download_file(node_id: NodeId, hash: &str, dst_path: &Path) -> Resu
 
     file.set_len(metadata.file_size)?;
 
+    let download_progress_ = Arc::new(parking_lot::Mutex::new(StreamProgress::default()));
+
+    download_progress_.lock().total = metadata.file_size;
+
+    let download_progress = download_progress_.clone();
+
+    tokio::spawn(async move { report_progress_loop(download_progress).await });
+
+    let download_progress = download_progress_.clone();
     futures::stream::iter(0..num_chunks)
         .map(|chunk_number| {
             remote.call(model::GetChunk {
@@ -282,6 +298,7 @@ pub async fn download_file(node_id: NodeId, hash: &str, dst_path: &Path) -> Resu
         .try_for_each(move |result| {
             future::ready((|| {
                 let chunk = result?;
+                download_progress.lock().current = chunk.offset + chunk.content.len() as u64;
                 file.write_all(&chunk.content[..])?;
                 Ok(())
             })())
@@ -302,6 +319,8 @@ pub async fn open_for_upload(filepath: &Path) -> Result<Url> {
         .take(65)
         .collect::<String>();
 
+    let receive_progress_ = Arc::new(parking_lot::Mutex::new(StreamProgress::default()));
+    let receive_progress = receive_progress_.clone();
     let file = Arc::new(Mutex::new(create_dest_file(filepath)?));
 
     let gsb_address = model::file_bus_id(&hash_name);
@@ -309,8 +328,25 @@ pub async fn open_for_upload(filepath: &Path) -> Result<Url> {
     log::info!("Binding to GSB address: {}", gsb_address);
     let _ = bus::bind(&gsb_address, move |msg: model::UploadChunk| {
         let file = file_clone.clone();
-        async move { chunk_uploaded(file.clone(), msg).await }
+        let receive_progress = receive_progress.clone();
+        let chunk_offset = msg.chunk.offset;
+        let chunk_size = msg.chunk.content.len() as u64;
+        async move {
+            let res = chunk_uploaded(file.clone(), msg).await;
+            {
+                let mut receive_progress_obj = receive_progress.lock();
+                if chunk_offset == 0 {
+                    receive_progress_obj.start = std::time::Instant::now();
+                    receive_progress_obj.upload_list.clear();
+                }
+                receive_progress_obj.current = chunk_offset + chunk_size;
+                receive_progress_obj.total = receive_progress_obj.current;
+            }
+            res
+        }
     });
+    let receive_progress = receive_progress_.clone();
+    tokio::spawn(async move { report_progress_loop(receive_progress).await });
 
     let file_clone = file.clone();
     let _ = bus::bind(&gsb_address, move |msg: model::UploadFinished| {
@@ -370,6 +406,11 @@ async fn upload_finished(
             return Err(model::Error::IntegrityError);
         }
         log::debug!("File hash matches expected hash {}.", &expected_hash);
+        println!(
+            "Upload finished correctly. File hash matches expected hash {}.",
+            &expected_hash
+        );
+        println!("Press Ctrl+C to exit.");
     } else {
         log::debug!("Upload finished. Expected file hash not provided. Omitting validation.");
     }
@@ -390,12 +431,25 @@ pub async fn upload_file(path: &Path, url: &Url) -> Result<()> {
 
     let chunk_size = DEFAULT_CHUNK_SIZE;
 
-    futures::stream::iter(get_chunks(path, chunk_size)?)
+    let upload_progress_ = Arc::new(parking_lot::Mutex::new(StreamProgress::default()));
+
+    let upload_progress = upload_progress_.clone();
+    tokio::spawn(async move { report_progress_loop(upload_progress).await });
+    let upload_progress = upload_progress_.clone();
+    let (file_size, chunks) = get_chunks(path, chunk_size)?;
+    upload_progress.lock().total = file_size;
+    futures::stream::iter(chunks)
         .map(|chunk| {
+            let upload_progress = upload_progress.clone();
             let remote = remote.clone();
             async move {
                 let chunk = chunk?;
-                Ok::<_, anyhow::Error>(remote.call(model::UploadChunk { chunk }).await??)
+                let chunk_offset = chunk.offset;
+                let chunk_size = chunk.content.len() as u64;
+                let resp =
+                    Ok::<_, anyhow::Error>(remote.call(model::UploadChunk { chunk }).await??);
+                upload_progress.lock().current = chunk_offset + chunk_size;
+                resp
             }
         })
         .buffered(3)
@@ -420,27 +474,35 @@ pub async fn upload_file(path: &Path, url: &Url) -> Result<()> {
 fn get_chunks(
     file_path: &Path,
     chunk_size: u64,
-) -> Result<impl Iterator<Item = Result<model::GftpChunk, std::io::Error>> + 'static, std::io::Error>
-{
+) -> Result<
+    (
+        u64,
+        impl Iterator<Item = Result<model::GftpChunk, std::io::Error>> + 'static,
+    ),
+    std::io::Error,
+> {
     let mut file = OpenOptions::new().read(true).open(file_path)?;
 
     let file_size = file.metadata()?.len();
     let n_chunks = (file_size + chunk_size - 1) / chunk_size;
 
-    Ok((0..n_chunks).map(move |n| {
-        let offset = n * chunk_size;
-        let bytes_to_read = if offset + chunk_size > file_size {
-            file_size - offset
-        } else {
-            chunk_size
-        };
-        let mut buffer = vec![0u8; bytes_to_read as usize];
-        file.read_exact(&mut buffer)?;
-        Ok(model::GftpChunk {
-            offset,
-            content: buffer,
-        })
-    }))
+    Ok((
+        file_size,
+        (0..n_chunks).map(move |n| {
+            let offset = n * chunk_size;
+            let bytes_to_read = if offset + chunk_size > file_size {
+                file_size - offset
+            } else {
+                chunk_size
+            };
+            let mut buffer = vec![0u8; bytes_to_read as usize];
+            file.read_exact(&mut buffer)?;
+            Ok(model::GftpChunk {
+                offset,
+                content: buffer,
+            })
+        }),
+    ))
 }
 
 fn hash_file_sha256(mut file: &mut fs::File) -> Result<String> {
