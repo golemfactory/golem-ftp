@@ -33,3 +33,17 @@ thiserror = "1.0.20"
 tokio = { version = "1", features = ["io-std", "time"] }
 url = { version = "2.1.1", features = ["serde"] }
 parking_lot = "0.12.2"
+
+[profile.release-fast]
+inherits = "release"
+incremental = false
+opt-level = 1
+panic = "unwind"
+
+
+[profile.release-lto]
+inherits = "release"
+codegen-units = 1
+lto = "fat"
+opt-level = 3
+panic = "abort"
