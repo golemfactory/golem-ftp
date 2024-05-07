@@ -1,0 +1,111 @@
+name: Release
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  packages: write
+  contents: write
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Release
+        uses: softprops/action-gh-release@v1
+
+  build:
+    runs-on: ${{ matrix.build-on }}
+    continue-on-error: true
+    needs: create-release
+    strategy:
+      matrix:
+        include:
+          - cpu: x86_64
+            os: win
+            target: x86_64-pc-windows-msvc
+            build-on: windows-latest
+            build-with: cargo
+            exe: ".exe"
+            run-tests: true
+          - cpu: x86_64
+            os: linux
+            target: x86_64-unknown-linux-musl
+            build-on: ubuntu-latest
+            build-with: cargo
+            exe: ""
+            run-tests: true
+          - cpu: aarch64
+            os: linux
+            target: aarch64-unknown-linux-musl
+            build-on: ubuntu-latest
+            build-with: cross
+            exe: ""
+            run-tests: false
+          - cpu: aarch64
+            os: macOS
+            target: aarch64-apple-darwin
+            build-on: macos-latest
+            build-with: cargo
+            exe: ""
+            run-tests: false
+          - cpu: x86_64
+            os: macOS
+            target: x86_64-apple-darwin
+            build-on: macos-latest
+            build-with: cargo
+            exe: ""
+            run-tests: true
+
+    name: Build Release ${{ matrix.cpu }} ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Extract version
+        id: version
+        run: |
+          echo version=${GITHUB_REF#refs/*/} >> $GITHUB_OUTPUT
+
+      - name: Update musl tools
+        if: matrix.build-with == 'cargo' && matrix.os == 'linux'
+        run: |
+          sudo apt update
+          sudo apt install -y musl-tools
+
+      - name: Update Rust and add toolchain ${{ matrix.target }}
+        if: matrix.build-with == 'cargo'
+        run: |
+          rustup update 
+          rustup target add ${{ matrix.target }}
+
+      - name: Install bin install if needed
+        if: matrix.build-with == 'cross'
+        run: |
+          wget -qO- https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-musl.tgz | tar xvz -C ~/.cargo/bin
+
+      - name: Install cross if needed
+        if: matrix.build-with == 'cross'
+        run: |
+          cargo binstall cross -y
+
+      - name: Build binary target/${{ matrix.target }}/release/golem-ftp
+        run: |
+          ${{ matrix.build-with }} build --profile release-lto --target ${{ matrix.target }}
+
+      - name: Compress binaries
+        run: |
+          # mv target/${{ matrix.target }}/release-lto/golem-ftp${{ matrix.exe }} target/${{ matrix.target }}/release-lto/golem-ftp${{ matrix.exe }}
+          tar -cf - -C target/${{ matrix.target }}/release-lto/ golem-ftp${{ matrix.exe }} | xz -9 > golem-ftp.tar.xz
+
+      - name: Upload
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: golem-ftp.tar.xz
+          asset_name: golem-ftp-${{ matrix.os }}-${{ matrix.cpu }}.tar.xz
+          tag: ${{ github.ref }}
+          overwrite: true
+          body: "Release ${{ steps.version.outputs.version }}"
