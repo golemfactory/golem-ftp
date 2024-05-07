@@ -43,4 +43,4 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Build golem ftp
-        run: cargo build --profile=release-lto
+        run: cargo build --profile=release-fast
