@@ -4,12 +4,14 @@ use futures::prelude::*;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 use sha3::{Digest, Sha3_256};
+use std::collections::VecDeque;
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::{fs, io};
+use serde::Serialize;
 use url::{quirks::hostname, Position, Url};
 
 use ya_core_model::gftp as model;
@@ -24,17 +26,68 @@ pub const DEFAULT_CHUNK_SIZE: u64 = 40 * 1024;
 // File download - publisher side ("requestor")
 // =========================================== //
 
+#[derive(Debug, Clone, Eq)]
+pub struct StreamProgress {
+    pub total: u64,
+    pub current: u64,
+    pub start: std::time::Instant,
+    pub upload_list: VecDeque<u64>,
+}
+
+#[derive(Serialize)]
+pub struct StreamProgressInfo {
+    #[serde(rename = "cur")]
+    pub current: u64,
+    #[serde(rename = "tot")]
+    pub total: u64,
+    #[serde(rename = "elp")]
+    pub elapsed: u64,
+    #[serde(rename = "spc")]
+    pub speed_curr: u64,
+    #[serde(rename = "spt")]
+    pub speed_total: u64,
+}
+
+impl PartialEq for StreamProgress {
+    fn eq(&self, other: &Self) -> bool {
+        let simple_field_res = self.total == other.total && self.current == other.current && self.start == other.start;
+        if !simple_field_res {
+            return false;
+        }
+        if self.upload_list.len() > 1 && other.upload_list.len() > 1 {
+            let self_last = self.upload_list.iter().last().unwrap();
+            let other_last = other.upload_list.iter().last().unwrap();
+            let self_first = self.upload_list.iter().next().unwrap();
+            let other_first = other.upload_list.iter().next().unwrap();
+            return self_last == other_last && self_first == other_first;
+        }
+        self.upload_list.len() == other.upload_list.len()
+    }
+}
+
 struct FileDesc {
     hash: String,
     file: Mutex<fs::File>,
     meta: model::GftpMetadata,
+
+    upload_progress: Arc<parking_lot::Mutex<StreamProgress>>,
 }
 
 impl FileDesc {
     fn new(file: fs::File, hash: String, meta: model::GftpMetadata) -> Arc<Self> {
         let file = Mutex::new(file);
 
-        Arc::new(FileDesc { hash, file, meta })
+        Arc::new(FileDesc {
+            hash,
+            file,
+            meta,
+            upload_progress: Arc::new(parking_lot::Mutex::new(StreamProgress {
+                total: 0,
+                current: 0,
+                start: std::time::Instant::now(),
+                upload_list: VecDeque::new(),
+            })),
+        })
     }
 
     pub fn open(path: &Path) -> Result<Arc<FileDesc>> {
@@ -52,14 +105,87 @@ impl FileDesc {
     pub fn bind_handlers(self: &Arc<Self>) {
         let gsb_address = model::file_bus_id(&self.hash);
         let desc = self.clone();
+
+        let upload_progress = self.upload_progress.clone();
         let _ = bus::bind(&gsb_address, move |_msg: model::GetMetadata| {
+            log::debug!("Sending metadata: {:?}", desc.meta);
+            let mut upload_progress_obj = upload_progress.lock();
+            upload_progress_obj.total = desc.meta.file_size;
+            upload_progress_obj.current = 0;
+            upload_progress_obj.start = std::time::Instant::now();
+            upload_progress_obj.upload_list.clear();
             future::ok(desc.meta.clone())
         });
 
         let desc = self.clone();
+        let upload_progress = self.upload_progress.clone();
         let _ = bus::bind(&gsb_address, move |msg: model::GetChunk| {
             let desc = desc.clone();
-            async move { desc.get_chunk(msg.offset, msg.size).await }
+            upload_progress.lock().total = desc.meta.file_size;
+            upload_progress.lock().current = msg.offset;
+            //log::info!("Sending chunk: {:?}", msg);
+            let upload_progress = upload_progress.clone();
+            async move {
+                let chunk = desc.get_chunk(msg.offset, msg.size).await;
+                match chunk {
+                    Ok(chunk) => {
+                        let mut upload_progress_obj = upload_progress.lock();
+                        upload_progress_obj.total = desc.meta.file_size;
+                        upload_progress_obj.current = chunk.offset + chunk.content.len() as u64;
+                        Ok(chunk)
+                    }
+                    Err(error) => Err(error),
+                }
+            }
+        });
+
+        let upload_progress = self.upload_progress.clone();
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(tokio::time::Duration::from_millis(250));
+            let mut last_progress = upload_progress.lock().clone();
+
+            loop {
+                interval.tick().await;
+                let current = upload_progress.lock().current;
+                let progress = {
+                    let mut upload_obj = upload_progress.lock();
+                    upload_obj.upload_list.push_back(current);
+                    if upload_obj.upload_list.len() > 20 {
+                        upload_obj.upload_list.pop_front();
+                    }
+                    upload_obj.clone()
+                };
+
+                if last_progress != progress && progress.total > 0 {
+                    let sec_el = progress.start.elapsed().as_secs_f64();
+                    let speed = if sec_el > 0_f64 {
+                        progress.current as f64 / sec_el
+                    } else {
+                        0.0
+                    };
+
+                    let current_speed = if progress.upload_list.len() >= 2 {
+                        (progress.upload_list.iter().last().unwrap()
+                            - progress.upload_list.iter().next().unwrap())
+                            as f64
+                            / (progress.upload_list.len() - 1) as f64
+                            / interval.period().as_secs_f64()
+                    } else {
+                        0_f64
+                    };
+
+                    let stream_progress_info = StreamProgressInfo {
+                        current: progress.current,
+                        total: progress.total,
+                        elapsed: sec_el as u64,
+                        speed_curr: current_speed as u64,
+                        speed_total: speed as u64,
+                    };
+
+                    println!("{}", serde_json::to_string(&stream_progress_info).unwrap());
+                }
+                last_progress = progress;
+            }
         });
     }
 
@@ -180,6 +306,7 @@ pub async fn open_for_upload(filepath: &Path) -> Result<Url> {
 
     let gsb_address = model::file_bus_id(&hash_name);
     let file_clone = file.clone();
+    log::info!("Binding to GSB address: {}", gsb_address);
     let _ = bus::bind(&gsb_address, move |msg: model::UploadChunk| {
         let file = file_clone.clone();
         async move { chunk_uploaded(file.clone(), msg).await }

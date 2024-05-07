@@ -1,6 +1,5 @@
 use anyhow::Result;
-use env_logger::{Builder, Env, Target};
-use gftp::rpc::{RpcBody, RpcId, RpcMessage, RpcRequest, RpcResult, RpcStatusResult};
+use golem_ftp::rpc::{RpcBody, RpcId, RpcMessage, RpcRequest, RpcResult, RpcStatusResult};
 
 use structopt::{clap, StructOpt};
 use tokio::io;
@@ -58,7 +57,7 @@ async fn execute_inner(id: Option<&RpcId>, request: RpcRequest, verbose: bool) -
         RpcRequest::Publish { files } => {
             let mut result = Vec::new();
             for file in files {
-                let url = gftp::publish(&file).await?;
+                let url = golem_ftp::publish(&file).await?;
                 result.push((file, url));
             }
             match result.len() {
@@ -71,7 +70,7 @@ async fn execute_inner(id: Option<&RpcId>, request: RpcRequest, verbose: bool) -
         RpcRequest::Close { urls } => {
             let mut statuses = Vec::with_capacity(urls.len());
             for url in urls {
-                let result = gftp::close(&url).await?;
+                let result = golem_ftp::close(&url).await?;
                 statuses.push(result.into())
             }
             match statuses.len() {
@@ -82,17 +81,17 @@ async fn execute_inner(id: Option<&RpcId>, request: RpcRequest, verbose: bool) -
             ExecMode::OneShot
         }
         RpcRequest::Download { url, output_file } => {
-            gftp::download_from_url(&url, &output_file).await?;
+            golem_ftp::download_from_url(&url, &output_file).await?;
             RpcMessage::file_response(id, output_file, url).print(verbose);
             ExecMode::OneShot
         }
         RpcRequest::Receive { output_file } => {
-            let url = gftp::open_for_upload(&output_file).await?;
+            let url = golem_ftp::open_for_upload(&output_file).await?;
             RpcMessage::file_response(id, output_file, url).print(verbose);
             ExecMode::Service
         }
         RpcRequest::Upload { file, url } => {
-            gftp::upload_file(&file, &url).await?;
+            golem_ftp::upload_file(&file, &url).await?;
             RpcMessage::file_response(id, file, url).print(verbose);
             ExecMode::OneShot
         }
@@ -152,10 +151,7 @@ async fn server_loop() {
 #[actix_rt::main]
 async fn main() -> Result<()> {
     dotenv::dotenv().ok();
-
-    let mut builder = Builder::from_env(Env::new());
-    builder.target(Target::Stderr);
-    builder.init();
+    env_logger::init();
 
     let args = Args::from_args();
     match args.command {
