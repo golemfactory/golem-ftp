@@ -98,7 +98,7 @@ impl FileDesc {
 
     pub fn open(path: &Path) -> Result<Arc<FileDesc>> {
         let mut file =
-            fs::File::open(path).with_context(|| format!("Can't open file {}.", path.display()))?;
+            fs::File::open(path).with_context(|| format!("Can't open file {}", path.display()))?;
 
         let hash = hash_file_sha256(&mut file)?;
         let meta = model::GftpMetadata {
