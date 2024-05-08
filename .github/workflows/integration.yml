@@ -36,12 +36,14 @@ jobs:
           cd integration
           python gen_random.py
 
-      - name: Publish file
-        run: |
-          cd integration
-          screen cargo run --profile=release-fast -- publish random_file.txt
-        env:
-          GSB_URL: tcp://127.0.0.1:11000
+
+      - uses: JarvusInnovations/background-action@v1
+        name: Publish file
+        with:
+          run: |
+            cd integration
+            GSB_URL=tcp://127.0.0.1:11000 cargo run --profile=release-fast -- publish random_file.txt
+          wait-for: 10s
 
       - name: Download file
         run: |
