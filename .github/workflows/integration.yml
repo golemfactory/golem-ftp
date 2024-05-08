@@ -43,6 +43,7 @@ jobs:
           run: |
             cd integration
             GSB_URL=tcp://127.0.0.1:11000 cargo run --profile=release-fast -- publish random_file.txt
+          wait-on: file://readme.md
           wait-for: 10s
 
       - name: Download file
