@@ -29,3 +29,16 @@ jobs:
         run: |
           cd integration
           docker-compose up -d
+          sleep 10
+
+      - name: Generate test file
+        run: |
+          cd integration
+          python gen_random.py
+
+      - name: Publish file
+        run: |
+          cd integration
+          cargo run --profile=release-fast -- publish random_file.txt
+
+          
