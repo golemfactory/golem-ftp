@@ -1,0 +1,31 @@
+
+
+name: Integration tests
+
+on:
+  push:
+  workflow_dispatch:
+  schedule:
+    - cron: "42 3 * * *"
+
+jobs:
+  build:
+    name: Golem ftp build only
+    timeout-minutes: 20
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build golem ftp
+        run: cargo build --profile=release-fast
+
+      - name: Run dockers
+        run: |
+          cd integration
+          docker-compose up -d

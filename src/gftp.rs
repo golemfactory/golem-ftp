@@ -4,14 +4,15 @@ use futures::prelude::*;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 use serde::Serialize;
-use sha3::{Digest, Sha3_256};
 use std::collections::VecDeque;
 use std::fs::{File, OpenOptions};
-use std::io::{Read, Seek, SeekFrom, Write};
+use std::io::{BufReader, Read, Seek, SeekFrom, Write};
 use std::path::Path;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::{fs, io};
+use sha1::Sha1;
+use sha1::Digest;
 use url::{quirks::hostname, Position, Url};
 
 use ya_core_model::gftp as model;
@@ -504,13 +505,14 @@ fn get_chunks(
 }
 
 fn hash_file_sha256(mut file: &mut fs::File) -> Result<String> {
-    let mut hasher = Sha3_256::new();
+
+    let mut hasher = Sha1::new();
 
     file.seek(SeekFrom::Start(0))
         .with_context(|| "Can't seek file at offset 0.".to_string())?;
-    io::copy(&mut file, &mut hasher)?;
 
-    Ok(format!("{:x}", hasher.result()))
+    io::copy(&mut BufReader::with_capacity(8000000, &mut file), &mut hasher)?;
+    Ok(format!("{:x}", hasher.finalize()))
 }
 
 /// Returns NodeId and file hash from gftp url.
