@@ -39,7 +39,13 @@ jobs:
       - name: Publish file
         run: |
           cd integration
-          cargo run --profile=release-fast -- publish random_file.txt
+          screen cargo run --profile=release-fast -- publish random_file.txt
         env:
           GSB_URL: tcp://127.0.0.1:11000
-          
+
+      - name: Download file
+        run: |
+          cd integration
+          screen cargo run --profile=release-fast -- download gftp://0x7c51df62f74dfa80599ef30219a045b3a58cb724/5f9f37dfdbe11ad9e28a975b9a0b64566de62bd6 random_file2.txt
+        env:
+          GSB_URL: tcp://127.0.0.1:11001
