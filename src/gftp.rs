@@ -4,6 +4,8 @@ use futures::prelude::*;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 use serde::Serialize;
+use sha1::Digest;
+use sha1::Sha1;
 use std::collections::VecDeque;
 use std::fs::{File, OpenOptions};
 use std::io::{BufReader, Read, Seek, SeekFrom, Write};
@@ -11,8 +13,6 @@ use std::path::Path;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::{fs, io};
-use sha1::Sha1;
-use sha1::Digest;
 use url::{quirks::hostname, Position, Url};
 
 use ya_core_model::gftp as model;
@@ -214,7 +214,12 @@ pub async fn download_from_url(url: &Url, dst_path: &Path) -> Result<()> {
 }
 
 pub async fn report_progress_loop(progress: Arc<parking_lot::Mutex<StreamProgress>>) {
-    let mut interval = tokio::time::interval(tokio::time::Duration::from_millis(250));
+    // get refresh rate from env variable GFTP_PROGRESS_INTERVAL
+    let interval_ms = std::env::var("GFTP_PROGRESS_INTERVAL")
+        .unwrap_or_else(|_| "250".to_string())
+        .parse::<u64>()
+        .unwrap_or(250);
+    let mut interval = tokio::time::interval(tokio::time::Duration::from_millis(interval_ms));
     let mut last_progress = progress.lock().clone();
 
     loop {
@@ -505,13 +510,15 @@ fn get_chunks(
 }
 
 fn hash_file_sha256(mut file: &mut fs::File) -> Result<String> {
-
     let mut hasher = Sha1::new();
 
     file.seek(SeekFrom::Start(0))
         .with_context(|| "Can't seek file at offset 0.".to_string())?;
 
-    io::copy(&mut BufReader::with_capacity(8000000, &mut file), &mut hasher)?;
+    io::copy(
+        &mut BufReader::with_capacity(8000000, &mut file),
+        &mut hasher,
+    )?;
     Ok(format!("{:x}", hasher.finalize()))
 }
 
