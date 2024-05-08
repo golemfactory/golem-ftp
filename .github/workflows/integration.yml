@@ -39,8 +39,8 @@ jobs:
 
       - name: Publish file
         run: |
-          cd integration
-          GSB_URL=tcp://127.0.0.1:11000 cargo run --profile=release-fast -- publish random_file.txt
+          target/release-fast/golem-ftp --profile=release-fast -- publish integration/random_file.txt &
+          sleep 3
 
       - name: Download file
         run: |
