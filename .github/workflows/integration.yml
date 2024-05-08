@@ -43,9 +43,11 @@ jobs:
           sleep 3
         env:
           GSB_URL: tcp://127.0.0.1:11000
+          GFTP_PROGRESS_INTERVAL: 5000
 
       - name: Download file
         run: |
           target/release-fast/golem-ftp download gftp://0x7c51df62f74dfa80599ef30219a045b3a58cb724/5f9f37dfdbe11ad9e28a975b9a0b64566de62bd6 integration/random_file2.txt
         env:
           GSB_URL: tcp://127.0.0.1:11001
+          GFTP_PROGRESS_INTERVAL: 5000
