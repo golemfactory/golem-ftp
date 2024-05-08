@@ -40,5 +40,6 @@ jobs:
         run: |
           cd integration
           cargo run --profile=release-fast -- publish random_file.txt
-
+        env:
+          GSB_URL: tcp://127.0.0.1:11000
           
