@@ -62,4 +62,4 @@ jobs:
         run: |
           cd pygftp
           poetry install
-          poetry run pygftp
+          poetry run python pygftp
