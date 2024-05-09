@@ -44,3 +44,22 @@ jobs:
 
       - name: Build golem ftp
         run: cargo build --profile=release-fast
+
+  golem-py-ftp:
+    name: Golem py ftp check
+    timeout-minutes: 20
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install Poetry
+        run: curl -sSL https://install.python-poetry.org | python3 - --version 1.8.2
+
+      - name: Build golem py ftp
+        run: |
+          cd pygftp
+          poetry install
+          poetry run pygftp
