@@ -1,13 +1,10 @@
 import asyncio
-import json
 import os.path
-import platform
-import subprocess
-import threading
 import logging
-from proc import run_simple, run_gftp_async, run_gftp_start, run_gftp_blocking
+from proc import run_simple, run_gftp_start
 
 logger = logging.getLogger(__name__)
+
 
 class GftpApi:
     def __init__(self, gftp_bin):
@@ -50,6 +47,8 @@ class GftpApi:
         logger.info(f"Downloading file: {url}")
         context = run_gftp_start([self.gftp_bin, "download", url, file_path])
 
+        yield context
+
         while context["process"].poll() is None:
             await asyncio.sleep(0.1)
 
@@ -61,8 +60,6 @@ class GftpApi:
             logger.info(f"File downloaded: {file_path}")
         else:
             logger.error(f"Error downloading file: {file_path}")
-
-        return context
 
     async def unpublish_file(self, context):
         if context["process"].poll() is None:
@@ -80,5 +77,3 @@ class GftpApi:
             raise Exception(context["error"])
 
         return context["process"].returncode
-
-

@@ -10,7 +10,7 @@ description="Golem File Transfer Protocol"
 keywords=["golem", "yagna"]
 
 [[bin]]
-name="golem-ftp"
+name="gftp"
 
 [dependencies]
 ya-compile-time-utils = "0.2"

@@ -6,8 +6,11 @@ authors = ["scx1332 <sieciech.czajka@golem.network>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = ">=3.8"
+python = ">=3.8.1"
 
+[tool.poetry.dev-dependencies]
+black = "24.4"
+flake8 = "7.0"
 
 [build-system]
 requires = ["poetry-core"]

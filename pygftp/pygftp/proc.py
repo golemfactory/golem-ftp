@@ -1,7 +1,5 @@
 import asyncio
 import json
-import os.path
-import platform
 import subprocess
 import threading
 import logging
@@ -14,11 +12,11 @@ def read_stream_stdout(stream, context):
         try:
             response = json.loads(line)
             logger.debug(json.dumps(response, indent=4, sort_keys=True))
-            if 'error' in response:
-                context["error"] = response['error']['message']
-            elif 'result' in response:
-                if isinstance(response['result'], list):
-                    array = response['result']
+            if "error" in response:
+                context["error"] = response["error"]["message"]
+            elif "result" in response:
+                if isinstance(response["result"], list):
+                    array = response["result"]
                     for item in array:
                         if "file" in item and "url" in item:
                             context["file"] = item["file"]
@@ -27,14 +25,14 @@ def read_stream_stdout(stream, context):
                             context["error"] = "Invalid response from GFTP"
                             raise Exception(context["error"])
                 else:
-                    item = response['result']
+                    item = response["result"]
                     if "file" in item and "url" in item:
                         context["file"] = item["file"]
                         context["url"] = item["url"]
                     else:
                         context["error"] = "Invalid response from GFTP"
                         raise Exception(context["error"])
-            elif 'cur' in response:
+            elif "cur" in response:
                 context["current"] = response["cur"]
                 context["total"] = response["tot"]
                 context["speedCurrent"] = response["spc"]
@@ -63,8 +61,12 @@ def run_gftp_start(args):
     context["elapsed"] = 0
     context["process"] = process
     # Create threads to read stdout and stderr concurrently
-    stdout_thread = threading.Thread(target=read_stream_stdout, args=(process.stdout, context))
-    stderr_thread = threading.Thread(target=read_stream_stderr, args=(process.stderr, context))
+    stdout_thread = threading.Thread(
+        target=read_stream_stdout, args=(process.stdout, context)
+    )
+    stderr_thread = threading.Thread(
+        target=read_stream_stderr, args=(process.stderr, context)
+    )
 
     # Start the threads
     stdout_thread.start()
@@ -97,7 +99,11 @@ async def run_gftp_async(args):
     context["stdout_thread"].join()
     context["stderr_thread"].join()
 
-    logger.info("GFTP process finished with return code: {}".format(context["process"].returncode))
+    logger.info(
+        "GFTP process finished with return code: {}".format(
+            context["process"].returncode
+        )
+    )
     if "error" in context:
         raise Exception(context["error"])
 
@@ -111,4 +117,3 @@ def run_simple(args):
     stdout, stderr = process.communicate()
 
     return stdout
-
