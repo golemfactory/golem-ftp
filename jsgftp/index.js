@@ -1,42 +1,47 @@
+import {Gftp} from "./jsgftp/gftp.js";
+import {generateRandomFileSync, getRandomChars} from "./jsgftp/utils.js";
+import path from 'path';
+import process from 'process';
+import {fileURLToPath} from 'url';
 import fs from 'fs';
-import { spawnProcessBlocking } from './jsgftp/proc.js';
-
-class Gftp {
-    constructor() {
-        this.gftp_bin = null;
-        this.version = null;
-    }
-
-    async init(gftp_bin) {
-        if (!fs.existsSync(gftp_bin)) {
-            throw new Error(`Gftp binary not found in location ${gftp_bin}`);
-        }
-        this.gftp_bin = gftp_bin;
-        this.version = await this._checkVersion();
-    }
-
-    async _checkVersion() {
-        let vString = await spawnProcessBlocking(this.gftp_bin, ["--version"]);
-
-        // trim, split by spaces and extract second element
-        vString = vString.trim().split(" ")[1];
-        return vString;
-    }
-
-    getVersion() {
-        return this.version;
-    }
-}
-
-async function spawn_gftp(gftp_bin, args) {
-
-    await spawnProcessBlocking(gftp_bin, args);
-}
 
 async function main() {
     let gftp = new Gftp();
-    await gftp.init("../target/release/gftp.exe")
+    // Accessing environment variable GFTP_BIN_PATH
+    let gftp_bin = process.env.GFTP_BIN_PATH;
+    if (!gftp_bin) {
+        const __filename = fileURLToPath(import.meta.url);
+
+        // Get current file directory
+        const currentFileDir = path.dirname(__filename);
+
+        // If GFTP_BIN_PATH is not set, construct the default path
+        gftp_bin = path.join(currentFileDir, '..', 'target', 'release', 'gftp.exe');
+    }
+    await gftp.init(gftp_bin);
+
     console.log(`gftp object successfully created with gftp version: ${gftp.getVersion()}`);
+
+    console.log("Generating test file");
+    const randomFileName = "random_" + getRandomChars(6);
+    const randomFileSrc = randomFileName + "_src.bin";
+    const randomFileDst = randomFileName + "_dst.bin";
+
+    await generateRandomFileSync(randomFileSrc, 1000000000);
+
+    let context = await gftp.publishFile(randomFileSrc);
+
+    await api.downloadFile(context["url"], random_file_dst);
+
+    await api.unpublishFile(context);
+
+
+    console.log("Cleanup test files");
+
+    fs.unlinkSync(randomFileSrc);
+    //fs.unlinkSync(randomFileDst);
+
+
 }
 
 main().then(_ => {
