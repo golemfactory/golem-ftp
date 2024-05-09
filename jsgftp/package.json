@@ -1,0 +1,12 @@
+{
+  "name": "jsgftp",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  }
+}
