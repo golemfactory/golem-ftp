@@ -82,6 +82,11 @@ jobs:
           GSB_URL: tcp://127.0.0.1:11001
           GFTP_PROGRESS_INTERVAL: 5000
 
+      - name: Check sha1 of downloaded file
+        run: |
+          sha1sum integration/random_file.txt
+          sha1sum integration/random_file2.txt
+
   pytest:
     name: Publish/download file using python driver
     timeout-minutes: 20
