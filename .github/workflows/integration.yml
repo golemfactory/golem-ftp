@@ -93,6 +93,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Poetry install give time to the docker to start, be careful with timings
+      - name: Run dockers
+        run: |
+          cd integration
+          docker-compose up -d
+
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
@@ -102,6 +108,7 @@ jobs:
         run: |
           tar -xf gftp.tar.xz
 
+      # Poetry install give time to the docker to start, be careful with timings
       - name: Install Poetry
         run: curl -sSL https://install.python-poetry.org | python3 - --version 1.8.2
 
@@ -112,3 +119,4 @@ jobs:
           poetry run python pygftp
         env:
           GFTP_BIN_PATH: ${{ github.workspace }}/gftp
+          GSB_URL: tcp://127.0.0.1:11000
