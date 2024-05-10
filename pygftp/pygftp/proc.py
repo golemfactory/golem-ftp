@@ -17,7 +17,6 @@ def read_stream_stdout(stream, context):
                 if "`/local/identity/Get` is unavailable" in context["error"]:
                     context["error"] = "Cannot connect to yagna service. "
                     "Check if yagna is running and proper GSB_URL is set"
-                    raise Exception(context["error"])
             elif "result" in response:
                 if isinstance(response["result"], list):
                     array = response["result"]
@@ -27,7 +26,6 @@ def read_stream_stdout(stream, context):
                             context["url"] = item["url"]
                         else:
                             context["error"] = "Invalid response from GFTP"
-                            raise Exception(context["error"])
                 else:
                     item = response["result"]
                     if "file" in item and "url" in item:
@@ -35,7 +33,6 @@ def read_stream_stdout(stream, context):
                         context["url"] = item["url"]
                     else:
                         context["error"] = "Invalid response from GFTP"
-                        raise Exception(context["error"])
             elif "cur" in response:
                 context["current"] = response["cur"]
                 context["total"] = response["tot"]
