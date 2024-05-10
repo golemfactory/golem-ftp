@@ -34,9 +34,11 @@ async def example():
     current_file_dir = os.path.dirname(os.path.realpath(__file__))
 
     gftp_bin = os.getenv("GFTP_BIN_PATH", None)
+
+    exe_ext = ".exe" if os.name == "nt" else ""
     if gftp_bin is None:
         gftp_bin = os.path.join(
-            current_file_dir, "..", "..", "target", "release", "gftp.exe"
+            current_file_dir, "..", "..", "target", "release", "gftp" + exe_ext
         )
 
     if not os.path.isfile(gftp_bin):
