@@ -15,8 +15,9 @@ def read_stream_stdout(stream, context):
             if "error" in response:
                 context["error"] = response["error"]["message"]
                 if "`/local/identity/Get` is unavailable" in context["error"]:
-                    raise Exception("Cannot connect to yagna service. "
-                                    "Check if yagna is running and proper GSB_URL is set")
+                    context["error"] = "Cannot connect to yagna service. "
+                    "Check if yagna is running and proper GSB_URL is set"
+                    raise Exception(context["error"])
             elif "result" in response:
                 if isinstance(response["result"], list):
                     array = response["result"]
