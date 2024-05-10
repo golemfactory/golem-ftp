@@ -17,7 +17,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
@@ -40,7 +40,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Download artifact
         uses: actions/download-artifact@v4
@@ -58,10 +58,9 @@ jobs:
           cd integration
           python gen_random.py
 
-
       - name: Publish file
         run: |
-          target/release-fast/golem-ftp publish integration/random_file.txt &
+          ./gftp publish integration/random_file.txt &
           sleep 3
         env:
           GSB_URL: tcp://127.0.0.1:11000
@@ -69,7 +68,7 @@ jobs:
 
       - name: Download file
         run: |
-          target/release-fast/golem-ftp download gftp://0x7c51df62f74dfa80599ef30219a045b3a58cb724/5f9f37dfdbe11ad9e28a975b9a0b64566de62bd6 integration/random_file2.txt
+          ./gftp download gftp://0x7c51df62f74dfa80599ef30219a045b3a58cb724/5f9f37dfdbe11ad9e28a975b9a0b64566de62bd6 integration/random_file2.txt
         env:
           GSB_URL: tcp://127.0.0.1:11001
           GFTP_PROGRESS_INTERVAL: 5000
