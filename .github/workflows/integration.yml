@@ -36,7 +36,7 @@ jobs:
     timeout-minutes: 20
 
     runs-on: ubuntu-latest
-    depends-on: golem-ftp
+    needs: golem-ftp
 
     steps:
       - name: Checkout
