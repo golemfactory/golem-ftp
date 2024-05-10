@@ -28,7 +28,7 @@ jobs:
       - name: Compress binary
         run: |
           cd target/release-fast
-          tar -cxf gftp.tar.xz gftp
+          tar -cJf gftp.tar.xz gftp
 
       - name: Upload binary
         uses: actions/upload-artifact@v4
