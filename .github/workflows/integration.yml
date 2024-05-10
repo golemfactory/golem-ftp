@@ -84,8 +84,9 @@ jobs:
 
       - name: Check sha1 of downloaded file
         run: |
-          sha1sum integration/random_file.txt
-          sha1sum integration/random_file2.txt
+          sha1sum integration/random_file.txt | cut -d ' ' -f 1 > integration/random_file.txt.sha1
+          sha1sum integration/random_file2.txt | cut -d ' ' -f 1 > integration/random_file2.txt.sha1
+          diff integration/random_file.txt.sha1 integration/random_file2.txt.sha1
 
   pytest:
     name: Publish/download file using python driver
