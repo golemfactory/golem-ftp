@@ -19,8 +19,18 @@ async def show_progress(prefix, context):
 async def example():
     logging.basicConfig(level=logging.INFO)
 
-    logger.info("Building Golem FTP release binary")
-    run_simple(["cargo", "build", "--release"])
+    # get current file directory
+    current_file_dir = os.path.dirname(os.path.realpath(__file__))
+
+    gftp_bin = os.getenv("GFTP_BIN_PATH", None)
+
+    exe_ext = ".exe" if os.name == "nt" else ""
+    if gftp_bin is None:
+        logger.info("Building Golem FTP release binary")
+        run_simple(["cargo", "build", "--release"])
+        gftp_bin = os.path.join(
+            current_file_dir, "..", "..", "target", "release", "gftp" + exe_ext
+        )
 
     logger.info("Generating test file")
 
@@ -29,17 +39,6 @@ async def example():
     random_file_src = random_file_name + "_src.bin"
     random_file_dst = random_file_name + "_dst.bin"
     generate_random_file(random_file_src, 1000000000)
-
-    # get current file directory
-    current_file_dir = os.path.dirname(os.path.realpath(__file__))
-
-    gftp_bin = os.getenv("GFTP_BIN_PATH", None)
-
-    exe_ext = ".exe" if os.name == "nt" else ""
-    if gftp_bin is None:
-        gftp_bin = os.path.join(
-            current_file_dir, "..", "..", "target", "release", "gftp" + exe_ext
-        )
 
     if not os.path.isfile(gftp_bin):
         raise Exception("gftp binary not found: " + gftp_bin)
