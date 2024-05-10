@@ -25,21 +25,27 @@ jobs:
       - name: Build golem ftp
         run: cargo build --profile=release-fast
 
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: gftp
+          path: target/release-fast/gftp
+
   publish1:
     name: Publish/download file
     timeout-minutes: 20
 
     runs-on: ubuntu-latest
+    depends-on: golem-ftp
 
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Cache dependencies
-        uses: Swatinem/rust-cache@v2
-
-      - name: Build golem ftp
-        run: cargo build --profile=release-fast
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: gftp
 
       - name: Run dockers
         run: |
