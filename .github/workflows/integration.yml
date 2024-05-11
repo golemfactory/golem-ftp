@@ -61,7 +61,7 @@ jobs:
           mkdir /accounts && cd /accounts
           wget https://github.com/golemfactory/erc20_payment_lib/releases/download/v0.4.2-attestation4/erc20_processor-linux-x86_64.tar.xz
           tar -xf erc20_processor-linux-x86_64.tar.xz
-          erc20_processor generate-key -n 5 > .env
+          ./erc20_processor generate-key -n 5 > .env
           cat .env | grep ETH_ADDRESS | sed "s/#\s//g" | sed "s/:\s/=/g" > $GITHUB_ENV
 
       - name: Run dockers
