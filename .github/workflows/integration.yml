@@ -107,6 +107,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Generate ethereum accounts
+        run: |
+          mkdir /accounts && cd /accounts
+          wget -qO- https://github.com/golemfactory/erc20_payment_lib/releases/download/v0.4.3/erc20_processor-linux-x86_64.tar.xz | tar -xJ
+          ./erc20_processor generate-key -n 5 > .env
+          cat .env | grep ETH_ADDRESS | sed "s/#\s//g" | sed "s/:\s/=/g" > $GITHUB_ENV
+          cat .env | grep ETH_PRIVATE_KEY_ | sed "s/#\s//g" | sed "s/:\s/=/g" >> $GITHUB_ENV
+
       # Poetry install give time to the docker to start, be careful with timings
       - name: Run dockers
         run: |
