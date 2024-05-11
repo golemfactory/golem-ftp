@@ -10,8 +10,8 @@ services:
     command: yagna service run
     environment:
       GSB_URL: tcp://0.0.0.0:11000
-      YAGNA_AUTOCONF_ID_SECRET: 342fc3ac3926d0a52f16e136e27511ec3dd9d2620dbba7ee9c563d96191e917c
-      YAGNA_PUBLIC_ADDRESS: 0x7c51df62f74dfa80599ef30219a045b3a58cb724
+      YAGNA_AUTOCONF_ID_SECRET: ${ETH_PRIVATE_KEY_1}
+      YAGNA_PUBLIC_ADDRESS: ${ETH_ADDRESS_1}
       YA_NET_TYPE: central
     ports:
       - 11000:11000
@@ -24,8 +24,8 @@ services:
     command: yagna service run
     environment:
       GSB_URL: tcp://0.0.0.0:11001
-      YAGNA_AUTOCONF_ID_SECRET: a05bef9453dc0132124fc42be729092f820069afa8ef7cdf1602279f4f08159a
-      YAGNA_PUBLIC_ADDRESS: 0x40d8a73c30ddb3220ecacb778371a85b2e3058b5
+      YAGNA_AUTOCONF_ID_SECRET: ${ETH_PRIVATE_KEY_2}
+      YAGNA_PUBLIC_ADDRESS: ${ETH_ADDRESS_2}
       YA_NET_TYPE: central
     ports:
       - 11001:11001
