@@ -103,6 +103,73 @@ jobs:
           sha1sum integration/random_file2.txt | cut -d ' ' -f 1 > integration/random_file2.txt.sha1
           diff integration/random_file.txt.sha1 integration/random_file2.txt.sha1
 
+  core-test-disaster:
+    name: Publish/download file disaster
+    timeout-minutes: 20
+
+    runs-on: ubuntu-latest
+    needs: golem-ftp
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: gftp.tar.xz
+
+      - name: Extract binary
+        run: |
+          tar -xf gftp.tar.xz
+
+      - name: Generate ethereum accounts
+        run: |
+          mkdir /accounts && cd /accounts
+          wget -qO- https://github.com/golemfactory/erc20_payment_lib/releases/download/v0.4.3/erc20_processor-linux-x86_64.tar.xz | tar -xJ
+          ./erc20_processor generate-key -n 5 > .env
+          cat .env | grep ETH_ADDRESS | sed "s/#\s//g" | sed "s/:\s/=/g" > $GITHUB_ENV
+          cat .env | grep ETH_PRIVATE_KEY_ | sed "s/#\s//g" | sed "s/:\s/=/g" >> $GITHUB_ENV
+
+      - name: Run dockers
+        run: |
+          cd integration
+          docker compose up -d
+          sleep 10
+
+      - name: Generate test file
+        run: |
+          cd integration
+          python gen_random.py
+
+      - name: Publish file
+        run: |
+          ./gftp publish integration/random_file.txt &
+          sleep 3
+        env:
+          GSB_URL: tcp://127.0.0.1:11000
+          GFTP_PROGRESS_INTERVAL: 5000
+
+      - name: Set qos
+        run: |
+          docker exec integration-yagna1-1 tc qdisc add dev eth0 root netem
+          docker exec integration-yagna2-1 tc qdisc add dev eth0 root netem
+          cd integration
+          /bin/bash qos_plan_disaster.sh &
+
+      - name: Download file
+        run: |
+          ./gftp download gftp://${ETH_ADDRESS_1}/5f9f37dfdbe11ad9e28a975b9a0b64566de62bd6 integration/random_file2.txt
+        env:
+          GSB_URL: tcp://127.0.0.1:11001
+          GFTP_PROGRESS_INTERVAL: 5000
+
+      - name: Check sha1 of downloaded file
+        run: |
+          sha1sum integration/random_file.txt | cut -d ' ' -f 1 > integration/random_file.txt.sha1
+          sha1sum integration/random_file2.txt | cut -d ' ' -f 1 > integration/random_file2.txt.sha1
+          diff integration/random_file.txt.sha1 integration/random_file2.txt.sha1
+
   pytest:
     name: Publish/download file using python driver
     timeout-minutes: 20
