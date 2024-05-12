@@ -83,6 +83,10 @@ jobs:
           GSB_URL: tcp://127.0.0.1:11000
           GFTP_PROGRESS_INTERVAL: 5000
 
+      - name: Set qos
+        run: |
+          docker exec integration-yagna1-1 tc qdisc add dev eth0 root netem delay 100ms
+
       - name: Download file
         run: |
           ./gftp download gftp://${ETH_ADDRESS_1}/5f9f37dfdbe11ad9e28a975b9a0b64566de62bd6 integration/random_file2.txt

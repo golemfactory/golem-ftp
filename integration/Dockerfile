@@ -2,7 +2,7 @@
 # If you need something smaller, you can use ubuntu slim or alpine without python
 FROM alpine:latest
 
-RUN apk add --no-cache curl bash
+RUN apk add --no-cache curl bash iproute2 iputils
 # Download official installer
 RUN curl -L https://join.golem.network/as-requestor --output as-requestor.sh
 RUN chmod +x as-requestor.sh
