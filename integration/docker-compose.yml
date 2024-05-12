@@ -10,6 +10,8 @@ services:
     command: yagna service run
     environment:
       GSB_URL: tcp://0.0.0.0:11000
+      YAGNA_AUTOCONF_ID_SECRET: ${ETH_PRIVATE_KEY_1}
+      YAGNA_PUBLIC_ADDRESS: ${ETH_ADDRESS_1}
       YA_NET_TYPE: central
     ports:
       - 11000:11000
@@ -24,6 +26,8 @@ services:
     command: yagna service run
     environment:
       GSB_URL: tcp://0.0.0.0:11001
+      YAGNA_AUTOCONF_ID_SECRET: ${ETH_PRIVATE_KEY_2}
+      YAGNA_PUBLIC_ADDRESS: ${ETH_ADDRESS_2}
       YA_NET_TYPE: central
     ports:
       - 11001:11001
