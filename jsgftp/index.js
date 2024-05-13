@@ -1,5 +1,5 @@
 import {Gftp} from "./jsgftp/gftp.js";
-import {generateRandomFileSync, getRandomChars} from "./jsgftp/utils.js";
+import {checkIfFilesIdentical, generateRandomFileSync, getRandomChars} from "./jsgftp/utils.js";
 import path from 'path';
 import process from 'process';
 import {fileURLToPath} from 'url';
@@ -31,17 +31,19 @@ async function main() {
 
     let context = await gftp.publishFile(randomFileSrc);
 
-    await api.downloadFile(context["url"], random_file_dst);
+    let downloadContext = gftp.startDownloadFile(context["url"], randomFileDst);
 
-    await api.unpublishFile(context);
+    await gftp.waitForDownloadFinished(downloadContext);
 
+    await gftp.unpublishFile(context);
+
+    console.log("Check if files are identical");
+
+    checkIfFilesIdentical(randomFileSrc, randomFileDst);
 
     console.log("Cleanup test files");
-
     fs.unlinkSync(randomFileSrc);
-    //fs.unlinkSync(randomFileDst);
-
-
+    fs.unlinkSync(randomFileDst);
 }
 
 main().then(_ => {

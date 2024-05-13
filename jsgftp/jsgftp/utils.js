@@ -1,6 +1,6 @@
 import fs from 'fs';
 import crypto from 'crypto';
-import Buffer from 'buffer';
+import buffer from 'buffer';
 
 
 export async function generateRandomFileSync(file_path, file_size) {
@@ -14,7 +14,7 @@ export async function generateRandomFileSync(file_path, file_size) {
     const random_content = crypto.randomBytes(chunk_size);
 
     let total_size_written = 0;
-    const file = fs.createWriteStream(file_path, { flags: 'w' });
+    const file = fs.createWriteStream(file_path, {flags: 'w'});
 
     for (let i = 0; i < chunk_count + 1; i++) {
         if (total_size_written + chunk_size > file_size) {
@@ -58,8 +58,8 @@ export function checkIfFilesIdentical(file1Path, file2Path) {
     }
 
     const bufferSize = 20000000;
-    const buffer1 = Buffer.alloc(bufferSize);
-    const buffer2 = Buffer.alloc(bufferSize);
+    const buffer1 = buffer.Buffer.alloc(bufferSize);
+    const buffer2 = buffer.Buffer.alloc(bufferSize);
     const file1 = fs.openSync(file1Path, 'r');
     const file2 = fs.openSync(file2Path, 'r');
 
