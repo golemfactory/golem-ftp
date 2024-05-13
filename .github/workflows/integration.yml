@@ -92,7 +92,7 @@ jobs:
 
       - name: Download file
         run: |
-          ./gftp download gftp://${ETH_ADDRESS_1}/5f9f37dfdbe11ad9e28a975b9a0b64566de62bd6 integration/random_file2.txt
+          ./gftp download gftp://${ETH_ADDRESS_0}/5f9f37dfdbe11ad9e28a975b9a0b64566de62bd6 integration/random_file2.txt
         env:
           GSB_URL: tcp://127.0.0.1:11001
           GFTP_PROGRESS_INTERVAL: 5000
@@ -159,7 +159,7 @@ jobs:
 
       - name: Download file
         run: |
-          ./gftp download gftp://${ETH_ADDRESS_1}/5f9f37dfdbe11ad9e28a975b9a0b64566de62bd6 integration/random_file2.txt
+          ./gftp download gftp://${ETH_ADDRESS_0}/5f9f37dfdbe11ad9e28a975b9a0b64566de62bd6 integration/random_file2.txt
         env:
           GSB_URL: tcp://127.0.0.1:11001
           GFTP_PROGRESS_INTERVAL: 5000
