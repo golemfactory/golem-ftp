@@ -13,6 +13,8 @@ ENV PATH="${PATH}:/root/.local/bin"
 # yagna installator normally asks for user input, so we need to set some environment variables to avoid that
 RUN GOLEM_ACCEPT_TOS=yes BATCH_MODE=yes YA_INSTALLER_CORE=${YAGNA_VERSION} ./as-requestor.sh
 
+RUN wget https://github.com/golemfactory/ya-relay/releases/download/v0.3.0/ya-relay-server && chmod +x ya-relay-server && mv ya-relay-server /usr/local/bin/
+
 
 
 

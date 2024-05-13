@@ -1,6 +1,15 @@
 
 
 services:
+  relay:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - YAGNA_VERSION=0.15.0
+    command: ya-relay-server
+    cap_add:
+      - NET_ADMIN
   yagna0:
     build:
       context: .
@@ -12,7 +21,7 @@ services:
       GSB_URL: tcp://0.0.0.0:11000
       YAGNA_AUTOCONF_ID_SECRET: ${ETH_PRIVATE_KEY_0}
       YAGNA_PUBLIC_ADDRESS: ${ETH_ADDRESS_0}
-      YA_NET_TYPE: central
+      YA_NET_RELAY_HOST: relay:9000
     ports:
       - 11000:11000
     cap_add:
@@ -28,7 +37,7 @@ services:
       GSB_URL: tcp://0.0.0.0:11001
       YAGNA_AUTOCONF_ID_SECRET: ${ETH_PRIVATE_KEY_1}
       YAGNA_PUBLIC_ADDRESS: ${ETH_ADDRESS_1}
-      YA_NET_TYPE: central
+      YA_NET_RELAY_HOST: relay:9000
     ports:
       - 11001:11001
     cap_add:
@@ -44,7 +53,7 @@ services:
       GSB_URL: tcp://0.0.0.0:11002
       YAGNA_AUTOCONF_ID_SECRET: ${ETH_PRIVATE_KEY_2}
       YAGNA_PUBLIC_ADDRESS: ${ETH_ADDRESS_2}
-      YA_NET_TYPE: central
+      YA_NET_RELAY_HOST: relay:9000
     ports:
       - 11002:11002
     cap_add:
@@ -60,7 +69,7 @@ services:
       GSB_URL: tcp://0.0.0.0:11003
       YAGNA_AUTOCONF_ID_SECRET: ${ETH_PRIVATE_KEY_3}
       YAGNA_PUBLIC_ADDRESS: ${ETH_ADDRESS_3}
-      YA_NET_TYPE: central
+      YA_NET_RELAY_HOST: relay:9000
     ports:
       - 11003:11003
     cap_add:
@@ -76,7 +85,7 @@ services:
       GSB_URL: tcp://0.0.0.0:11004
       YAGNA_AUTOCONF_ID_SECRET: ${ETH_PRIVATE_KEY_4}
       YAGNA_PUBLIC_ADDRESS: ${ETH_ADDRESS_4}
-      YA_NET_TYPE: central
+      YA_NET_RELAY_HOST: relay:9000
     ports:
       - 11004:11004
     cap_add:
