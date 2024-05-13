@@ -7,9 +7,10 @@ logger = logging.getLogger(__name__)
 
 
 class GftpApi:
-    def __init__(self, gftp_bin):
+    def __init__(self, gftp_bin, gsb_url=None):
         if not os.path.isfile(gftp_bin):
             raise Exception("gftp binary not found: " + gftp_bin)
+        self.gsb_url = gsb_url
         self.gftp_bin = gftp_bin
         self.gftp_version = self._get_version()
         logger.info("GFTP binary accepted with version: " + self.gftp_version)

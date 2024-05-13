@@ -43,20 +43,37 @@ async def example():
     if not os.path.isfile(gftp_bin):
         raise Exception("gftp binary not found: " + gftp_bin)
 
-    api = GftpApi(gftp_bin)
+    gsb_url_1 = os.getenv("GSB_URL_1", None)
+    gsb_url_2 = os.getenv("GSB_URL_2", None)
 
-    context = await api.publish_file(random_file_src)
+    if os.getenv("GSB_URL", None):
+        logger.info("Using commonn gsb url: {}", os.getenv("GSB_URL"))
+        gsb_url_1 = os.getenv("GSB_URL")
+        gsb_url_2 = os.getenv("GSB_URL")
+
+    if gsb_url_1:
+        logger.info("Api1 using gsb_url: {}", gsb_url_1)
+    else:
+        logger.info("Api1 using default gsb_url")
+    if gsb_url_2:
+        logger.info("Api2 using gsb_url: {}", gsb_url_1)
+    else:
+        logger.info("Api2 using default gsb_url")
+    api1 = GftpApi(gftp_bin, gsb_url_1)
+    api2 = GftpApi(gftp_bin, gsb_url_2)
+
+    context = await api1.publish_file(random_file_src)
 
     fut2 = asyncio.create_task(show_progress("Upload progress:", context))
 
-    async for context2 in api.download_file(context["url"], random_file_dst):
+    async for context2 in api2.download_file(context["url"], random_file_dst):
         fut3 = asyncio.create_task(show_progress("Download progress:", context2))
         pass
 
     fut2.cancel()
     fut3.cancel()
 
-    await api.unpublish_file(context)
+    await api1.unpublish_file(context)
 
     logger.info("Comparing files if they are identical:")
     check_if_files_identical(random_file_src, random_file_dst)

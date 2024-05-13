@@ -1,3 +1,4 @@
+import os
 import asyncio
 import json
 import subprocess
@@ -53,9 +54,12 @@ def read_stream_stderr(stream, context):
         print("ERR: ", line.decode().strip())
 
 
-def run_gftp_start(args):
+def run_gftp_start(args, override_gsb_url=None):
     context = {}
-    process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    environ = os.environ.copy()
+    if override_gsb_url:
+        environ["GSB_URL"] = override_gsb_url
+    process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=environ)
 
     context["current"] = 0
     context["total"] = 0
@@ -81,8 +85,8 @@ def run_gftp_start(args):
     return context
 
 
-def run_gftp_blocking(args):
-    context = run_gftp_start(args)
+def run_gftp_blocking(args, override_gsb_url=None):
+    context = run_gftp_start(args, override_gsb_url)
 
     # Wait for the process to finish
     context["process"].wait()
@@ -92,8 +96,8 @@ def run_gftp_blocking(args):
     context["stderr_thread"].join()
 
 
-async def run_gftp_async(args):
-    context = run_gftp_start(args)
+async def run_gftp_async(args, override_gsb_url=None):
+    context = run_gftp_start(args, override_gsb_url)
 
     while context["process"].poll() is None:
         await asyncio.sleep(1)
