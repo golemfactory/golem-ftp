@@ -37,7 +37,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
@@ -53,7 +53,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install Poetry
         run: curl -sSL https://install.python-poetry.org | python3 - --version 1.8.2
@@ -63,3 +63,20 @@ jobs:
           cd pygftp
           poetry install
           poetry run python pygftp
+
+  golem-js-ftp:
+    name: Golem js ftp check
+    timeout-minutes: 20
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run js
+        run: |
+          cd jsgftp
+          npm install
+          npm run start
+          
