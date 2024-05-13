@@ -4,7 +4,7 @@ import logging
 
 from gftp import GftpApi
 from proc import run_simple
-from utils import check_if_files_identical, generate_random_file, get_random_chars
+from utils import check_if_files_identical, generate_random_file, get_random_chars, human_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +13,8 @@ async def show_progress(prefix, context):
     while True:
         await asyncio.sleep(0.5)
         ff = context["current"] / context["total"]
-        print(f"{prefix}: {context['current']}/{context['total']} - {ff:.2%} - {context['speedCurrent']}")
+        human_1 = human_bytes(context["speedCurrent"])
+        print(f"{prefix}: {context['current']}/{context['total']} - {ff:.2%} - {human_1}/s - {context['elapsed']}s")
 
 
 async def example():

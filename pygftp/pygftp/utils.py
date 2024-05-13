@@ -6,6 +6,37 @@ import string
 logger = logging.getLogger(__name__)
 
 
+def human_bytes(size):
+    if size >= 1_000_000_000:
+        gibs = size / (1024 * 1024 * 1024)
+        if gibs >= 100:
+            return f"{gibs:.0f} GiB"
+        if gibs >= 10:
+            return f"{gibs:.1f} GiB"
+        if gibs >= 1:
+            return f"{gibs:.2f} GiB"
+        return f"{gibs:.3f} GiB"
+    if size >= 1_000_000:
+        mibs = size / (1024 * 1024)
+        if mibs >= 100:
+            return f"{mibs:.0f} MiB"
+        if mibs >= 10:
+            return f"{mibs:.1f} MiB"
+        if mibs >= 1:
+            return f"{mibs:.2f} MiB"
+        return f"{mibs:.3f} MiB"
+    if size >= 1000:
+        kibs = size / 1024
+        if kibs >= 100:
+            return f"{kibs:.0f} KiB"
+        if kibs >= 10:
+            return f"{kibs:.1f} KiB"
+        if kibs >= 1:
+            return f"{kibs:.2f} KiB"
+        return f"{kibs:.3f} KiB"
+    return f"{size} B"
+
+
 def check_if_files_identical(file1_path, file2_path):
     if not os.path.isfile(file1_path):
         raise Exception("File not found: " + file1_path)
