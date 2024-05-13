@@ -85,8 +85,11 @@ jobs:
 
       - name: Set qos
         run: |
-          docker exec integration-yagna1-1 tc qdisc add dev eth0 root netem
+          docker exec integration-relay-0 tc qdisc add dev eth0 root netem
+          docker exec integration-yagna1-0 tc qdisc add dev eth0 root netem
           docker exec integration-yagna2-1 tc qdisc add dev eth0 root netem
+          docker exec integration-yagna3-1 tc qdisc add dev eth0 root netem
+          docker exec integration-yagna4-1 tc qdisc add dev eth0 root netem
           cd integration
           /bin/bash qos_plan.sh &
 
@@ -152,8 +155,12 @@ jobs:
 
       - name: Set qos
         run: |
-          docker exec integration-yagna1-1 tc qdisc add dev eth0 root netem
+          docker exec integration-relay-0 tc qdisc add dev eth0 root netem
+          docker exec integration-yagna0-0 tc qdisc add dev eth0 root netem
+          docker exec integration-yagna1-0 tc qdisc add dev eth0 root netem
           docker exec integration-yagna2-1 tc qdisc add dev eth0 root netem
+          docker exec integration-yagna3-1 tc qdisc add dev eth0 root netem
+          docker exec integration-yagna4-1 tc qdisc add dev eth0 root netem
           cd integration
           /bin/bash qos_plan_disaster.sh &
 
