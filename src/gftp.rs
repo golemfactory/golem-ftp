@@ -221,7 +221,7 @@ pub async fn report_progress_loop(progress: Arc<parking_lot::Mutex<StreamProgres
         .unwrap_or(250);
 
     let upload_list_len = (20 * 250) / interval_ms; // 20 elements for default 250ms
-    let upload_list_len = upload_list_len.clamp(5, 100) as usize;
+    let upload_list_len = upload_list_len.clamp(2, 100) as usize;
 
     let mut interval = tokio::time::interval(tokio::time::Duration::from_millis(interval_ms));
     let mut last_progress = progress.lock().clone();
