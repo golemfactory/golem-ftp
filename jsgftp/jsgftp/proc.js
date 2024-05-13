@@ -5,7 +5,7 @@ import fs from 'fs';
 function tryParseLine(line, context) {
     try {
         let response = JSON.parse(line);
-        console.debug(JSON.stringify(response, null, 4));
+        //console.debug(JSON.stringify(response, null, 4));
 
         if ("error" in response) {
             let errMsg = response["error"]["message"];
@@ -42,7 +42,7 @@ function tryParseLine(line, context) {
             context["elapsed"] = response["elp"];
         }
     } catch (error) {
-        console.info(`Cannot parse line: ${line}`);
+        console.error(`Cannot parse line: ${line}`);
     }
 }
 
