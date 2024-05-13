@@ -52,15 +52,15 @@ async def example():
         gsb_url_2 = os.getenv("GSB_URL")
 
     if gsb_url_1:
-        logger.info("Api1 using gsb_url: {}", gsb_url_1)
+        logger.info(f"Api1 using gsb_url: {gsb_url_1}")
     else:
         logger.info("Api1 using default gsb_url")
     if gsb_url_2:
-        logger.info("Api2 using gsb_url: {}", gsb_url_2)
+        logger.info(f"Api2 using gsb_url: {gsb_url_2}")
     else:
         logger.info("Api2 using default gsb_url")
-    api1 = GftpApi(gftp_bin, gsb_url_1)
-    api2 = GftpApi(gftp_bin, gsb_url_2)
+    api1 = GftpApi(gftp_bin, gsb_url=gsb_url_1)
+    api2 = GftpApi(gftp_bin, gsb_url=gsb_url_2)
 
     context = await api1.publish_file(random_file_src)
 

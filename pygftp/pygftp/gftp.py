@@ -13,6 +13,7 @@ class GftpApi:
         self.gsb_url = gsb_url
         self.gftp_bin = gftp_bin
         self.gftp_version = self._get_version()
+        self.published_file = None
         logger.info("GFTP binary accepted with version: " + self.gftp_version)
 
     def _get_version(self):
@@ -27,10 +28,12 @@ class GftpApi:
         return self.gftp_version
 
     async def publish_file(self, file_path):
+        if self.published_file:
+            raise Exception("Cannot publish file because another file is already published: " + self.published_file)
         logger.info(f"Publishing file: {file_path}")
         if not os.path.isfile(file_path):
             raise Exception("Cannot publish file because not found: " + file_path)
-        context = run_gftp_start([self.gftp_bin, "publish", file_path])
+        context = run_gftp_start([self.gftp_bin, "publish", file_path], override_gsb_url=self.gsb_url)
 
         while context["process"].poll() is None:
             if "url" in context:
@@ -42,11 +45,12 @@ class GftpApi:
 
         if context["url"]:
             logger.info(f"File published: {context['file']} with URL: {context['url']}")
+        self.published_file = context["url"]
         return context
 
     async def download_file(self, url, file_path):
         logger.info(f"Downloading file: {url}")
-        context = run_gftp_start([self.gftp_bin, "download", url, file_path])
+        context = run_gftp_start([self.gftp_bin, "download", url, file_path], override_gsb_url=self.gsb_url)
 
         yield context
 
@@ -63,6 +67,8 @@ class GftpApi:
             logger.error(f"Error downloading file: {file_path}")
 
     async def unpublish_file(self, context):
+        if not self.published_file:
+            raise Exception("Cannot unpublish file because no file is published")
         if context["process"].poll() is None:
             context["process"].terminate()
 
@@ -77,4 +83,5 @@ class GftpApi:
         if "error" in context:
             raise Exception(context["error"])
 
+        self.published_file = None
         return context["process"].returncode
