@@ -13,7 +13,7 @@ async def show_progress(prefix, context):
     while True:
         await asyncio.sleep(0.5)
         ff = context["current"] / context["total"]
-        print(f"{prefix}: {context['current']}/{context['total']} - {ff:.2%}")
+        print(f"{prefix}: {context['current']}/{context['total']} - {ff:.2%} - {context['speedCurrent']}")
 
 
 async def example():
