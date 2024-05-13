@@ -216,3 +216,48 @@ jobs:
         env:
           GFTP_BIN_PATH: ${{ github.workspace }}/gftp
           GSB_URL: tcp://127.0.0.1:11000
+
+
+  jstest:
+    name: Publish/download file using json driver
+    timeout-minutes: 20
+
+    runs-on: ubuntu-latest
+    needs: golem-ftp
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate ethereum accounts
+        run: |
+          mkdir /accounts && cd /accounts
+          wget -qO- https://github.com/golemfactory/erc20_payment_lib/releases/download/v0.4.3/erc20_processor-linux-x86_64.tar.xz | tar -xJ
+          ./erc20_processor generate-key -n 5 > .env
+          cat .env | grep ETH_ADDRESS | sed "s/#\s//g" | sed "s/:\s/=/g" > $GITHUB_ENV
+          cat .env | grep ETH_PRIVATE_KEY_ | sed "s/#\s//g" | sed "s/:\s/=/g" >> $GITHUB_ENV
+
+      # Poetry install give time to the docker to start, be careful with timings
+      - name: Run dockers
+        run: |
+          cd integration
+          docker-compose up -d
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: gftp.tar.xz
+
+      - name: Extract binary
+        run: |
+          tar -xf gftp.tar.xz
+
+      - name: Run js
+        run: |
+          cd jsgftp
+          npm install
+          npm run start
+        env:
+          GFTP_BIN_PATH: ${{ github.workspace }}/gftp
+          GSB_URL: tcp://127.0.0.1:11000
+

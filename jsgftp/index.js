@@ -16,7 +16,7 @@ async function main() {
         const currentFileDir = path.dirname(__filename);
 
         // If GFTP_BIN_PATH is not set, construct the default path
-        gftp_bin = path.join(currentFileDir, '..', 'target', 'release', 'gftp.exe');
+        gftp_bin = path.join(currentFileDir, '..', 'target', 'release', 'gftp');
     }
     await gftp.init(gftp_bin);
 
