@@ -56,7 +56,7 @@ async def example():
     else:
         logger.info("Api1 using default gsb_url")
     if gsb_url_2:
-        logger.info("Api2 using gsb_url: {}", gsb_url_1)
+        logger.info("Api2 using gsb_url: {}", gsb_url_2)
     else:
         logger.info("Api2 using default gsb_url")
     api1 = GftpApi(gftp_bin, gsb_url_1)

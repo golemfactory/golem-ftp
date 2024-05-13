@@ -215,7 +215,8 @@ jobs:
           poetry run python -u pygftp
         env:
           GFTP_BIN_PATH: ${{ github.workspace }}/gftp
-          GSB_URL: tcp://127.0.0.1:11000
+          GSB_URL_1: tcp://127.0.0.1:11001
+          GSB_URL_2: tcp://127.0.0.1:11000
 
 
   jstest:
