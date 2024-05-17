@@ -91,21 +91,21 @@ jobs:
         run: |
           cargo binstall cross -y
 
-      - name: Build binary target/${{ matrix.target }}/release/golem-ftp
+      - name: Build binary target/${{ matrix.target }}/release-lto/gftp
         run: |
           ${{ matrix.build-with }} build --profile release-lto --target ${{ matrix.target }}
 
       - name: Compress binaries
         run: |
-          # mv target/${{ matrix.target }}/release-lto/golem-ftp${{ matrix.exe }} target/${{ matrix.target }}/release-lto/golem-ftp${{ matrix.exe }}
-          tar -cf - -C target/${{ matrix.target }}/release-lto/ golem-ftp${{ matrix.exe }} | xz -9 > golem-ftp.tar.xz
+          # mv target/${{ matrix.target }}/release-lto/gftp${{ matrix.exe }} target/${{ matrix.target }}/release-lto/gftp${{ matrix.exe }}
+          tar -cf - -C target/${{ matrix.target }}/release-lto/ gftp${{ matrix.exe }} | xz -9 > gftp.tar.xz
 
       - name: Upload
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: golem-ftp.tar.xz
-          asset_name: golem-ftp-${{ matrix.os }}-${{ matrix.cpu }}.tar.xz
+          file: gftp.tar.xz
+          asset_name: gftp-${{ matrix.os }}-${{ matrix.cpu }}.tar.xz
           tag: ${{ github.ref }}
           overwrite: true
           body: "Release ${{ steps.version.outputs.version }}"
